@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Sign QR | Sistem Pengesahan Dokumen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .view-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .view-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Certificate style borders */
+        .certificate-border {
+            position: relative;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .certificate-border::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid #cbd5e1;
+            pointer-events: none;
+            border-radius: 0.375rem; /* Match rounded-md */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-md z-10 relative">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-signature text-2xl text-blue-300"></i>
+                <h1 class="text-xl font-semibold tracking-wide">E-Sign<span class="font-light text-blue-200">QR</span></h1>
+            </div>
+            <div class="text-sm font-medium bg-blue-800 px-3 py-1 rounded-full border border-blue-700 hidden sm:block">
+                Sistem Pengesahan Dokumen Digital
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-3xl">
+
+            <!-- VIEW 1: Input Form -->
+            <section id="view-form" class="view-section bg-white rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200">
+                <div class="mb-6 border-b border-gray-100 pb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Form Identitas Dokumen</h2>
+                    <p class="text-gray-500 text-sm mt-1">Lengkapi form di bawah ini untuk menghasilkan QR Code sebagai tanda tangan pengesahan dokumen yang sah.</p>
+                </div>
+
+                <form id="signature-form" class="space-y-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Signer Name -->
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="signerName" class="block text-sm font-medium text-gray-700 mb-1">Penandatanganan dilakukan oleh <span class="text-red-500">*</span></label>
+                            <input type="text" id="signerName" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                placeholder="Nama Lengkap beserta Gelar">
+                        </div>
+
+                        <!-- ID / Notes -->
+                        <div>
+                            <label for="signerId" class="block text-sm font-medium text-gray-700 mb-1">Nomor Induk / Keterangan <span class="text-red-500">*</span></label>
+                            <input type="text" id="signerId" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                placeholder="NIP / NIK / Jabatan">
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label for="signerEmail" class="block text-sm font-medium text-gray-700 mb-1">Alamat Email <span class="text-red-500">*</span></label>
+                            <input type="email" id="signerEmail" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                placeholder="email@instansi.ac.id">
+                        </div>
+
+                        <!-- Subject -->
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="docSubject" class="block text-sm font-medium text-gray-700 mb-1">Perihal Penandatanganan <span class="text-red-500">*</span></label>
+                            <input type="text" id="docSubject" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                placeholder="Contoh: Pengesahan Modul Kuliah Bina Usaha">
+                        </div>
+
+                        <!-- Purpose -->
+                        <div>
+                            <label for="docPurpose" class="block text-sm font-medium text-gray-700 mb-1">Tujuan Penandatanganan <span class="text-red-500">*</span></label>
+                            <input type="text" id="docPurpose" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                placeholder="Contoh: Persetujuan Akademik">
+                        </div>
+
+                        <!-- Date -->
+                        <div>
+                            <label for="signDate" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Penandatanganan <span class="text-red-500">*</span></label>
+                            <input type="date" id="signDate" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" id="btnGenerate" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg shadow-sm transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-qrcode"></i> Generate QR Code
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- VIEW 2: QR Code Result -->
+            <section id="view-qr" class="view-section bg-white rounded-xl shadow-lg p-6 sm:p-10 border border-gray-200 text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-green-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">QR Code Berhasil Dibuat</h2>
+                <p class="text-gray-500 text-sm mb-6">Scan QR Code ini atau lampirkan pada dokumen Anda untuk verifikasi keaslian tanda tangan digital.</p>
+                
+                <div class="flex justify-center mb-6">
+                    <div class="p-4 bg-white border-2 border-dashed border-gray-300 rounded-xl inline-block cursor-pointer hover:shadow-lg transition-all transform hover:scale-105" id="qrcode-container" title="Klik untuk simulasi scan QR">
+                        <!-- QR Code will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Info Peringatan Hosting -->
+                <div class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-4 rounded-lg text-left shadow-sm max-w-lg mx-auto">
+                    <div class="flex gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-yellow-600 mt-1"></i>
+                        <div>
+                            <strong>Catatan Scan Kamera HP:</strong><br>
+                            Agar QR Code ini bisa discan menggunakan kamera HP, file aplikasi web ini <b>harus di-hosting (di-online-kan) ke internet</b> terlebih dahulu. HP tidak dapat membaca URL jika web masih dibuka secara offline (lokal) dari komputer.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tambahan link simulasi agar mudah ditest di browser -->
+                <div class="mb-8 text-center">
+                    <button type="button" id="btn-verify-test" class="text-blue-600 hover:text-blue-800 text-sm font-medium underline inline-flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 transition-colors">
+                        <i class="fa-solid fa-expand"></i> Simulasi Scan (Buka Halaman Verifikasi)
+                    </button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="btnDownloadQR" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Download QR PNG
+                    </button>
+                    <button id="btnCreateNew" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-6 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Buat Baru
+                    </button>
+                </div>
+            </section>
+
+            <!-- VIEW 3: Verification Page -->
+            <section id="view-verify" class="view-section">
+                <!-- Certificate Style Container -->
+                <div class="certificate-border rounded-xl p-8 sm:p-10 text-center">
+                    
+                    <!-- Verification Status Header -->
+                    <div id="verify-status" class="mb-8">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm ring-2 ring-green-500">
+                            <i class="fa-solid fa-shield-check text-4xl text-green-600"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-green-700 tracking-tight">DOKUMEN SAH</h2>
+                        <p class="text-green-600 font-medium mt-1">Verified Digital Signature</p>
+                        <div class="mt-4 inline-block bg-green-50 text-green-700 text-xs px-3 py-1 rounded-full border border-green-200">
+                            <i class="fa-solid fa-lock mr-1"></i> Integritas Data Terjamin (SHA-256)
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="flex items-center justify-center gap-4 mb-8">
+                        <div class="h-px bg-gray-200 flex-grow"></div>
+                        <i class="fa-solid fa-file-certificate text-gray-400"></i>
+                        <div class="h-px bg-gray-200 flex-grow"></div>
+                    </div>
+
+                    <!-- Document Details Grid -->
+                    <div class="text-left space-y-4 max-w-2xl mx-auto">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 border-b border-gray-100 pb-3">
+                            <div class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Perihal</div>
+                            <div class="col-span-2 font-medium text-gray-900" id="v-subject">...</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 border-b border-gray-100 pb-3">
+                            <div class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Tujuan</div>
+                            <div class="col-span-2 text-gray-800" id="v-purpose">...</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 border-b border-gray-100 pb-3">
+                            <div class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Tgl Tanda Tangan</div>
+                            <div class="col-span-2 text-gray-800 font-medium" id="v-date">...</div>
+                        </div>
+                        
+                        <div class="mt-6 pt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Ditandatangani Secara Elektronik Oleh:</h3>
+                            <div class="flex items-start gap-3">
+                                <div class="mt-1">
+                                    <i class="fa-solid fa-user-pen text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-lg text-gray-900" id="v-name">...</div>
+                                    <div class="text-sm text-gray-600 mt-1" id="v-id">...</div>
+                                    <div class="text-sm text-blue-600 mt-1" id="v-email">...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hash Information -->
+                        <div class="mt-6 text-center">
+                            <p class="text-xs text-gray-400 mb-1">Cryptographic Signature Hash (SHA-256)</p>
+                            <code class="text-[10px] sm:text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-md break-all border border-gray-200 block" id="v-hash">
+                                ...
+                            </code>
+                        </div>
+                    </div>
+
+                    <div class="mt-10">
+                        <button onclick="resetApp()" class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-6 rounded-lg shadow-sm transition-all text-sm">
+                            Halaman Utama Generator
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error State for Verification -->
+            <section id="view-error" class="view-section bg-white rounded-xl shadow-lg p-10 border border-red-200 text-center">
+                <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-circle-xmark text-4xl text-red-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Verifikasi Gagal</h2>
+                <p class="text-gray-600 mb-6" id="error-message">Data tanda tangan tidak valid atau rusak.</p>
+                <button onclick="resetApp()" class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-6 rounded-lg shadow-sm transition-all text-sm">
+                    Kembali ke Beranda
+                </button>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-4xl mx-auto px-4 py-4 text-center text-sm text-gray-500">
+            &copy; <span id="currentYear"></span> E-Sign QR System. Sistem Simulasi Tanda Tangan Digital Berbasis Hash SHA-256.
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        // Set today's date as default in form
+        document.getElementById('signDate').valueAsDate = new Date();
+
+        // UI View Management
+        const views = {
+            form: document.getElementById('view-form'),
+            qr: document.getElementById('view-qr'),
+            verify: document.getElementById('view-verify'),
+            error: document.getElementById('view-error')
+        };
+
+        function showView(viewName) {
+            Object.values(views).forEach(el => {
+                if (el) el.classList.remove('active');
+            });
+            if (views[viewName]) {
+                views[viewName].classList.add('active');
+            }
+        }
+
+        // Cryptography Utility (Simulating digital signature via SHA-256)
+        async function generateSHA256Hash(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        // Base64 Encoding/Decoding with Unicode support
+        function encodeBase64Unicode(str) {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                function toSolidBytes(match, p1) {
+                    return String.fromCharCode('0x' + p1);
+                }));
+        }
+
+        function decodeBase64Unicode(str) {
+            return decodeURIComponent(atob(str).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        }
+
+        // Formatted Date Helper
+        function formatDate(dateString) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        const form = document.getElementById('signature-form');
+        const qrcodeContainer = document.getElementById('qrcode-container');
+        let currentQRCode = null;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Gather data
+            const btn = document.getElementById('btnGenerate');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+            btn.disabled = true;
+
+            try {
+                const docData = {
+                    name: document.getElementById('signerName').value.trim(),
+                    id: document.getElementById('signerId').value.trim(),
+                    email: document.getElementById('signerEmail').value.trim(),
+                    subject: document.getElementById('docSubject').value.trim(),
+                    purpose: document.getElementById('docPurpose').value.trim(),
+                    date: document.getElementById('signDate').value
+                };
+
+                // Create a string representation for hashing
+                const dataString = JSON.stringify(docData);
+                
+                // Generate Hash
+                const hash = await generateSHA256Hash(dataString);
+
+                // Create payload
+                const payload = {
+                    d: docData,
+                    h: hash
+                };
+
+                // Encode to Base64 to make it URL safe
+                const encodedData = encodeBase64Unicode(JSON.stringify(payload));
+                
+                // Construct Verification URL
+                // We construct the intended real URL for the QR code
+                let verifyUrl = "";
+                
+                // Safe check for blob URLs in iframes (like this preview environment)
+                if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
+                    verifyUrl = `https://example.com/verify?data=${encodeURIComponent(encodedData)}`;
+                } else {
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    verifyUrl = `${baseUrl}?verify=${encodeURIComponent(encodedData)}`;
+                }
+
+                // Setup simulation click (bypass iframe navigation restrictions and history errors)
+                const simBtn = document.getElementById('btn-verify-test');
+                const qrContainer = document.getElementById('qrcode-container');
+                
+                const simulateScan = (e) => {
+                    if(e) e.preventDefault();
+                    // Instead of using history.pushState which fails in blobs/iframes,
+                    // we simply call the verification logic directly with the encoded string.
+                    // This allows you to test the UI flow perfectly without triggering browser security errors.
+                    verifyDocument(encodedData);
+                };
+
+                simBtn.onclick = simulateScan;
+                qrContainer.onclick = simulateScan;
+
+                // Generate QR Code
+                qrcodeContainer.innerHTML = ''; // Clear previous
+                currentQRCode = new QRCode(qrcodeContainer, {
+                    text: verifyUrl,
+                    width: 256,
+                    height: 256,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+
+                // Show QR View
+                setTimeout(() => {
+                    showView('qr');
+                    btn.innerHTML = '<i class="fa-solid fa-qrcode"></i> Generate QR Code';
+                    btn.disabled = false;
+                }, 500); // slight delay for smooth transition
+
+            } catch (error) {
+                console.error("Error generating signature:", error);
+                alert("Terjadi kesalahan saat membuat QR Code.");
+                btn.innerHTML = '<i class="fa-solid fa-qrcode"></i> Generate QR Code';
+                btn.disabled = false;
+            }
+        });
+
+        // Download QR Code logic
+        document.getElementById('btnDownloadQR').addEventListener('click', () => {
+            // qrcode.js renders a canvas and an img tag. We need to grab the image data.
+            const canvas = qrcodeContainer.querySelector('canvas');
+            const img = qrcodeContainer.querySelector('img');
+            
+            let downloadUrl = '';
+            
+            if (img && img.src && img.src.startsWith('data:image')) {
+                downloadUrl = img.src;
+            } else if (canvas) {
+                downloadUrl = canvas.toDataURL("image/png");
+            } else {
+                alert("QR Code belum siap untuk diunduh.");
+                return;
+            }
+
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `E-SignQR_${new Date().getTime()}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        document.getElementById('btnCreateNew').addEventListener('click', () => {
+            resetApp();
+        });
+
+        async function verifyDocument(encodedParam) {
+            try {
+                // Decode base64 URL parameter
+                const jsonString = decodeBase64Unicode(encodedParam);
+                const payload = JSON.parse(jsonString);
+
+                if (!payload || !payload.d || !payload.h) {
+                    throw new Error("Format data tidak valid.");
+                }
+
+                const docData = payload.d;
+                const providedHash = payload.h;
+
+                // Re-calculate hash to verify integrity
+                const dataString = JSON.stringify(docData);
+                const calculatedHash = await generateSHA256Hash(dataString);
+
+                if (calculatedHash !== providedHash) {
+                    throw new Error("Integritas data terkompromi. Hash tidak cocok.");
+                }
+
+                // If valid, populate the UI
+                document.getElementById('v-subject').textContent = docData.subject;
+                document.getElementById('v-purpose').textContent = docData.purpose;
+                document.getElementById('v-date').textContent = formatDate(docData.date);
+                
+                document.getElementById('v-name').textContent = docData.name;
+                document.getElementById('v-id').textContent = docData.id;
+                document.getElementById('v-email').textContent = docData.email;
+                
+                document.getElementById('v-hash').textContent = providedHash;
+
+                // Show success view
+                showView('verify');
+
+            } catch (error) {
+                console.error("Verification error:", error);
+                document.getElementById('error-message').textContent = error.message || "Data tanda tangan tidak valid atau rusak.";
+                showView('error');
+            }
+        }
+
+        // Helper to reset the app view safely
+        function resetApp() {
+            // Attempt to clean URL if we aren't in a restrictive iframe environment
+            try {
+                if (window.location.search) {
+                     const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                     window.history.replaceState({path: baseUrl}, '', baseUrl);
+                }
+            } catch(e) {
+                // Ignore history errors in iframes/blobs
+            }
+            
+            form.reset();
+            document.getElementById('signDate').valueAsDate = new Date();
+            showView('form');
+        }
+
+        // Initialize App based on URL
+        function initApp() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const verifyParam = urlParams.get('verify');
+
+                if (verifyParam) {
+                    // We are in verification mode
+                    verifyDocument(verifyParam);
+                } else {
+                    // We are in creation mode
+                    showView('form');
+                }
+            } catch(e) {
+                 // Fallback if URL parsing fails in special environments
+                 showView('form');
+            }
+        }
+
+        // Run initialization
+        initApp();
+    </script>
+</body>
+</html>
